@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>唯のVN档案馆 · 网站导航</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root {
+    --bg: #0f1220;
+    --card: #181c33;
+    --accent: #8aa2ff;
+    --accent-soft: rgba(138,162,255,.15);
+    --text: #e8ebff;
+    --sub: #aab0ff;
+    --border: rgba(255,255,255,.08);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background:
+        radial-gradient(1200px 600px at 20% -10%, #1b1f46, transparent),
+        radial-gradient(1000px 500px at 90% 10%, #251d3f, transparent),
+        var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+        "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    line-height: 1.7;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.container {
+    max-width: 1100px;
+    margin: auto;
+    padding: 48px 20px 64px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 48px;
+}
+
+header h1 {
+    font-size: 2.4rem;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+}
+
+header p {
+    color: var(--sub);
+    font-size: 0.95rem;
+}
+
+.section {
+    margin-bottom: 48px;
+}
+
+.section h2 {
+    font-size: 1.4rem;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section h2::before {
+    content: "";
+    width: 6px;
+    height: 18px;
+    background: var(--accent);
+    border-radius: 4px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 18px;
+}
+
+.card {
+    background: linear-gradient(180deg, rgba(255,255,255,.04), transparent);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 18px;
+    transition: transform .25s ease, box-shadow .25s ease, border-color .25s;
+    position: relative;
+    overflow: hidden;
+}
+
+.card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, transparent 30%, var(--accent-soft), transparent 70%);
+    opacity: 0;
+    transition: opacity .3s;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent);
+    box-shadow: 0 10px 30px rgba(0,0,0,.35);
+}
+
+.card:hover::after {
+    opacity: 1;
+}
+
+.card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 6px;
+}
+
+.card p {
+    font-size: 0.85rem;
+    color: var(--sub);
+    word-break: break-all;
+}
+
+footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 0.8rem;
+    color: var(--sub);
+}
+
+footer a {
+    color: var(--accent);
+}
+
+.copy {
+    margin-top: 8px;
+    line-height: 1.6;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<header>
+    <h1>唯の VN 档案馆</h1>
+    <p>个人站点 · 同人作品 · 游戏与资源导航</p>
+</header>
+
+<section class="section">
+    <h2>主站入口</h2>
+    <div class="grid">
+        <a class="card" href="https://www.yinghu.xyz" target="_blank">
+            <h3>www.yinghu.xyz</h3>
+            <p>主站域名</p>
+        </a>
+        <a class="card" href="https://wei.yinghu.xyz" target="_blank">
+            <h3>wei.yinghu.xyz</h3>
+            <p>镜像站</p>
+        </a>
+        <a class="card" href="https://yinghu.netlify.app" target="_blank">
+            <h3>yinghu.netlify.app</h3>
+            <p>Netlify 镜像站</p>
+        </a>
+        <a class="card" href="https://amatsutsumi.github.io" target="_blank">
+            <h3>amatsutsumi.github.io</h3>
+            <p>GitHub Pages</p>
+        </a>
+    </div>
+</section>
+
+<section class="section">
+    <h2>附属站点</h2>
+    <div class="grid">
+        <a class="card" href="https://forum.yinghu.xyz" target="_blank">
+            <h3>网站论坛</h3>
+            <p>forum.yinghu.xyz</p>
+        </a>
+        <a class="card" href="https://auroralili.cloudns.ch/krkr.html" target="_blank">
+            <h3>krkr 游戏合集</h3>
+            <p>同人 / 视觉小说相关</p>
+        </a>
+        <a class="card" href="https://gal.yinghu.xyz" target="_blank">
+            <h3>附属资源仓库</h3>
+            <p>gal.yinghu.xyz<br>账号：wei / 密码：123456</p>
+        </a>
+        <a class="card" href="https://drive.yinghu.xyz" target="_blank">
+            <h3>附属网盘</h3>
+            <p>drive.yinghu.xyz</p>
+        </a>
+    </div>
+</section>
+
+<footer>
+    <div>
+        作者：花月唯<br>
+        链接：
+        <a href="https://wei.yinghu.xyz/posts/36236.html" target="_blank">
+            https://wei.yinghu.xyz/posts/36236.html
+        </a><br>
+        来源：唯の VN 档案馆
+    </div>
+    <div class="copy">
+        著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
+    </div>
+</footer>
+
+</div>
+
+<script>
+// 预留 JS，可后续加搜索 / 动效
+console.log("唯のVN档案馆 · 导航页已加载");
+</script>
+
+</body>
+</html>

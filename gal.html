@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>gal资源库 - 16011个项目</title>
+    <link rel="stylesheet" href="fast_styles.css">
+    <style>
+        :root {
+            --item-height: 60px;
+            --batch-size: 200;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎮 gal资源库</h1>
+            <p class="subtitle">共 16011 个游戏 • 虚拟滚动加载</p>
+        </header>
+        
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="搜索游戏名称..." autofocus>
+            <div class="search-stats">
+                <span>显示: <span id="visibleCount">0</span> / 16011</span>
+                <span>加载: <span id="loadedCount">0</span></span>
+            </div>
+        </div>
+        
+        <!-- 虚拟滚动容器 -->
+        <div class="virtual-container" id="scrollContainer">
+            <div class="scroll-content" id="scrollContent" style="height: 960660px;">
+                <!-- 内容会动态插入到这里 -->
+            </div>
+        </div>
+        
+        <div class="status-bar">
+            <div class="status-item">
+                <span id="statusText">就绪</span>
+            </div>
+            <div class="controls">
+                <button id="clearSearch" class="btn">清除搜索</button>
+                <button id="scrollTop" class="btn">回到顶部</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="fast_scripts.js"></script>
+</body>
+</html>

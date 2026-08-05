@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Live2D × 智谱Chat × TTS 测试</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f6fa; color: #222; min-height: 100vh;
+    display: flex; flex-direction: column;
+  }
+  #stage {
+    width: 100vw; height: 60vh;
+    background: linear-gradient(180deg, #eef1f8 0%, #f5f6fa 100%);
+    border-bottom: 1px solid #e3e5ec;
+    position: relative;
+  }
+  #canvas { width: 100%; height: 100%; display: block; }
+  #status {
+    position: absolute; top: 10px; left: 12px;
+    font-size: 12px; color: #666;
+    background: rgba(255,255,255,.8); padding: 4px 10px; border-radius: 6px;
+  }
+
+  .panel { padding: 14px 18px; }
+  .chat-box {
+    display: flex; gap: 8px; margin-bottom: 10px;
+  }
+  .chat-box input {
+    flex: 1; padding: 10px 14px; font-size: 15px;
+    border: 1px solid #d0d4dc; border-radius: 10px; outline: none;
+    transition: border .15s;
+  }
+  .chat-box input:focus { border-color: #4f7cff; }
+  .chat-box button {
+    padding: 10px 20px; font-size: 15px; border: none; border-radius: 10px;
+    background: #4f7cff; color: #fff; cursor: pointer; transition: background .15s;
+  }
+  .chat-box button:hover { background: #3a68f0; }
+  .chat-box button:disabled { background: #aab4cc; cursor: not-allowed; }
+
+  .reply {
+    min-height: 48px; padding: 10px 14px; border-radius: 10px;
+    background: #fff; border: 1px solid #e3e5ec; font-size: 14px; line-height: 1.7;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .reply .label { color: #4f7cff; font-weight: 600; margin-right: 6px; }
+
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .toolbar button {
+    padding: 7px 14px; font-size: 13px; border: none; border-radius: 8px;
+    background: #eef1f8; color: #333; cursor: pointer;
+  }
+  .toolbar button:hover { background: #dde3f3; }
+
+  .hint { font-size: 12px; color: #999; margin-top: 8px; line-height: 1.6; }
+  audio { display: none; }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <canvas id="canvas"></canvas>
+  <div id="status">模型加载中…</div>
+</div>
+
+<div class="panel">
+  <div class="chat-box">
+    <input id="input" placeholder="给模型发消息，比如：讲个笑话" autocomplete="off" />
+    <button id="sendBtn">发送</button>
+  </div>
+
+  <div class="reply" id="reply">
+    <span style="color:#aaa">AI 的回复会显示在这里…</span>
+  </div>
+
+  <div class="toolbar" id="motionBtns">
+    <span style="color:#aaa;font-size:13px">动作按钮加载中…</span>
+  </div>
+
+  <div class="hint">
+    💡 点击画布任意位置 → 模型随机播放动作+表情<br>
+    💡 控制台（F12）会打印 API 原始返回，方便对照调整解析逻辑
+  </div>
+</div>
+
+<audio id="audio" preload="auto"></audio>
+
+<!-- L2D 官方库 -->
+<script src="https://unpkg.com/l2d/dist/index.min.js"></script>
+<script>
+/* ========== 配置 ========== */
+const MODEL_URL = "https://fastly.jsdelivr.net/gh/auroraisok/CDN1@1.0/live2d/Murasame.model3.json";
+const CHAT_API  = "https://api.yinghu.asia/api/chat";
+const TTS_API   = "https://api.yinghu.asia/api/tts";
+
+/* ========== DOM ========== */
+const canvas    = document.getElementById("canvas");
+const statusEl  = document.getElementById("status");
+const inputEl   = document.getElementById("input");
+const sendBtn   = document.getElementById("sendBtn");
+const replyEl   = document.getElementById("reply");
+const motionBox = document.getElementById("motionBtns");
+const audioEl   = document.getElementById("audio");
+
+/* ========== L2D 初始化 ========== */
+const l2d = L2D.init(canvas);
+
+l2d.on("loadstart", (total) => { statusEl.textContent = `开始加载（共 ${total} 个文件）`; });
+l2d.on("loadprogress", (loaded, total) => {
+  statusEl.textContent = `加载中 ${Math.round(loaded/total*100)}%`;
+});
+l2d.on("loaded", () => {
+  statusEl.textContent = "✅ 模型就绪";
+  console.log("模型加载完成");
+  buildMotionButtons();
+  // 默认播一个待机动作
+  safePlay("Idle", "待机");
+});
+
+l2d.load({ path: MODEL_URL, scale: 0.85, volume: 1 });
+
+/* ========== 工具函数 ========== */
+function safePlay(group, label) {
+  const motions = l2d.getMotions() || {};
+  if (motions[group] && motions[group].length) {
+    l2d.playMotion(group, undefined, 2); // index省略=随机
+    console.log(`▶ 播放动作组：${group}（${label || ""}）`);
+    return true;
+  }
+  // 回退：随机挑一个存在的组
+  const groups = Object.keys(motions);
+  if (groups.length) {
+    const g = groups[Math.floor(Math.random() * groups.length)];
+    l2d.playMotion(g, undefined, 2);
+    console.log(`▶ 回退随机动作组：${g}`);
+  }
+}
+
+function randomExpression() {
+  const exps = l2d.getExpressions() || [];
+  if (exps.length) {
+    const e = exps[Math.floor(Math.random() * exps.length)];
+    l2d.setExpression(e);
+    console.log(`🙂 随机表情：${e}`);
+  }
+}
+
+/* ========== 动态生成动作按钮 ========== */
+function buildMotionButtons() {
+  const motions = l2d.getMotions() || {};
+  const groups = Object.keys(motions);
+  motionBox.innerHTML = "";
+  if (!groups.length) {
+    motionBox.innerHTML = '<span style="color:#aaa">该模型没有动作组</span>';
+    return;
+  }
+  groups.forEach(g => {
+    const b = document.createElement("button");
+    b.textContent = g;
+    b.title = `播放动作组 ${g}（随机一条）`;
+    b.onclick = () => safePlay(g, g);
+    motionBox.appendChild(b);
+  });
+  // 额外：随机表情按钮
+  const eb = document.createElement("button");
+  eb.textContent = "🎲 随机表情";
+  eb.onclick = randomExpression;
+  motionBox.appendChild(eb);
+}
+
+/* ========== 点击画布 → 随机动作+表情 ========== */
+canvas.addEventListener("click", () => {
+  safePlay(undefined, "点击随机"); // group省略时函数内部会随机挑
+  randomExpression();
+});
+
+/* ========== 调用 Chat API ========== */
+async function callChat(userText) {
+  // 智谱兼容格式：OpenAI 风格 messages
+  const body = {
+    messages: [
+      { role: "system", content: "你是一个可爱的桌面助手，回答简洁生动。" },
+      { role: "user",   content: userText }
+    ],
+    temperature: 0.7
+  };
+  const res = await fetch(CHAT_API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error(`Chat HTTP ${res.status}`);
+  const data = await res.json().catch(() => ({}));
+  console.log("[Chat 原始返回]", data);
+
+  // 兼容多种常见返回结构
+  return data.reply
+      || data.answer
+      || data.content
+      || data.data?.reply
+      || data.data?.answer
+      || data.data?.content
+      || data.choices?.[0]?.message?.content   // OpenAI / 智谱标准
+      || data.response
+      || JSON.stringify(data);
+}
+
+/* ========== 调用 TTS API ========== */
+async function callTTS(text) {
+  const url = `${TTS_API}?text=${encodeURIComponent(text)}`;
+  const res = await fetch(url, { method: "GET" });
+  if (!res.ok) throw new Error(`TTS HTTP ${res.status}`);
+  const ct = res.headers.get("content-type") || "";
+
+  // 情况1：直接返回音频二进制
+  if (ct.includes("audio") || ct.includes("octet-stream")) {
+    const blob = await res.blob();
+    return URL.createObjectURL(blob);
+  }
+
+  // 情况2：返回 JSON（含 base64 或 url）
+  const data = await res.json().catch(() => ({}));
+  console.log("[TTS 原始返回]", data);
+  const d = data.data || data;
+  if (d.audio_data_url) return d.audio_data_url;          // data:audio/...;base64,...
+  if (d.audio_url)     return d.audio_url;
+  if (d.audio)         return `data:audio/mpeg;base64,${d.audio}`;
+  if (d.url)           return d.url;
+  throw new Error("TTS 返回里找不到音频字段，请查看控制台原始返回");
+}
+
+/* ========== 播放语音 + 张嘴口型 ========== */
+function playWithLipSync(audioUrl, text) {
+  audioEl.src = audioUrl;
+  audioEl.volume = 1.0;
+  l2d.setVolume(1);
+
+  // 用音频音量驱动嘴部参数（Cubism 通用嘴型参数名）
+  const MOUTH_PARAMS = ["ParamMouthOpenY", "PARAM_MOUTH_OPEN_Y", "MouthOpen"];
+  let mouthParam = null;
+  try {
+    const params = l2d.getParams() || [];
+    const found = params.find(p => MOUTH_PARAMS.includes(p.id));
+    if (found) mouthParam = found.id;
+  } catch(e) {}
+
+  let rafId = null;
+  const analyser = createAnalyser(audioEl);
+
+  function tick() {
+    if (!analyser) {
+      // 没拿到 analyser 就按时间近似张嘴
+      const t = audioEl.currentTime;
+      if (mouthParam) l2d.setParams({ [mouthParam]: 0.3 + 0.5 * Math.abs(Math.sin(t * 6)) });
+      rafId = requestAnimationFrame(tick);
+      return;
+    }
+    const v = analyser();
+    if (mouthParam) l2d.setParams({ [mouthParam]: v });
+    rafId = requestAnimationFrame(tick);
+  }
+
+  audioEl.onplay = () => {
+    console.log("🔊 语音开始播放，张嘴");
+    if (mouthParam) console.log("   嘴型参数：", mouthParam);
+    rafId = requestAnimationFrame(tick);
+  };
+  audioEl.onended = () => {
+    console.log("🔊 语音结束，闭嘴");
+    cancelAnimationFrame(rafId);
+    if (mouthParam) l2d.setParams({ [mouthParam]: 0 });
+    // 播放完回到待机
+    safePlay("Idle", "待机");
+  };
+  audioEl.onerror = (e) => {
+    console.error("音频播放错误", e);
+    cancelAnimationFrame(rafId);
+    if (mouthParam) l2d.setParams({ [mouthParam]: 0 });
+  };
+
+  audioEl.play().catch(err => {
+    console.warn("浏览器阻止自动播放，需用户先交互：", err.message);
+    // 静音预加载解锁，等用户下次点击再响
+    audioEl.muted = true;
+    audioEl.play().then(() => { audioEl.muted = false; }).catch(()=>{});
+  });
+
+  // 同时在回复框打字机式显示文字
+  typeText(text);
+}
+
+/* 用 Web Audio API 分析音量 → 驱动嘴型 */
+function createAnalyser(audioEl) {
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    const ctx = new AC();
+    const src = ctx.createMediaElementSource(audioEl);
+    const an  = ctx.createAnalyser();
+    an.fftSize = 256;
+    src.connect(an);
+    an.connect(ctx.destination);
+    const buf = new Uint8Array(an.frequencyBinCount);
+    return function getVolume() {
+      an.getByteFrequencyData(buf);
+      let sum = 0;
+      for (let i = 0; i < buf.length; i++) sum += buf[i];
+      const avg = sum / buf.length / 255; // 0~1
+      return Math.min(1, avg * 2.2); // 略微放大让嘴型更明显
+    };
+  } catch(e) {
+    console.warn("Web Audio 初始化失败，回退到时间近似张嘴", e);
+    return null;
+  }
+}
+
+/* 打字机效果 */
+function typeText(text) {
+  replyEl.innerHTML = '<span class="label">AI：</span>';
+  let i = 0;
+  const speed = 28; // ms/字
+  function step() {
+    if (i >= text.length) return;
+    replyEl.appendChild(document.createTextNode(text[i++]));
+    setTimeout(step, speed);
+  }
+  step();
+}
+
+/* ========== 主流程：发送 ========== */
+async function send() {
+  const text = inputEl.value.trim();
+  if (!text) return;
+
+  sendBtn.disabled = true;
+  inputEl.disabled = true;
+  replyEl.innerHTML = '<span style="color:#4f7cff">🤔 模型思考中…</span>';
+
+  // 1) 思索中：播一个"思考"动作/表情
+  safePlay("Thinking", "思考") || safePlay("Idle", "待机");
+  // 试着切一个"认真/思索"类表情
+  const exps = l2d.getExpressions() || [];
+  const thinkExp = exps.find(e => /think|serious|normal|default/i.test(e)) || exps[0];
+  if (thinkExp) l2d.setExpression(thinkExp);
+
+  try {
+    // 2) 调 Chat
+    const reply = await callChat(text);
+    console.log("✅ Chat 回复：", reply);
+
+    // 3) 调 TTS（用回复文字）
+    const audioUrl = await callTTS(reply);
+    console.log("✅ TTS 音频 URL：", audioUrl.slice(0, 80));
+
+    // 4) 张嘴 + 语音 + 文字同步输出
+    // 先切个"说话"表情
+    const speakExp = (l2d.getExpressions()||[]).find(e => /happy|smile|talk|speak/i.test(e));
+    if (speakExp) l2d.setExpression(speakExp);
+
+    playWithLipSync(audioUrl, reply);
+
+  } catch (err) {
+    console.error("❌ 流程出错：", err);
+    replyEl.innerHTML = `<span style="color:#e74c3c">出错：${err.message}</span><br>
+      <span style="color:#999;font-size:12px">请打开 F12 控制台查看 API 原始返回，对照调整解析逻辑</span>`;
+    safePlay("Idle", "待机");
+  } finally {
+    sendBtn.disabled = false;
+    inputEl.disabled = false;
+    inputEl.value = "";
+    inputEl.focus();
+  }
+}
+
+sendBtn.addEventListener("click", send);
+inputEl.addEventListener("keydown", (e) => { if (e.key === "Enter") send(); });
+</script>
+</body>
+</html>

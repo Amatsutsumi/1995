@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live2D 看板娘测试</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Live2D 看板娘</title>
     <style>
-        /* 简单重置，让页面干净一点 */
-        * { margin: 0; padding: 0; }
+        /* 简单重置 */
+        * {
+            margin: 0;
+            padding: 0;
+        }
         body {
             background: #f5f7fa;
             min-height: 100vh;
@@ -19,11 +22,18 @@
             background: white;
             padding: 40px 60px;
             border-radius: 24px;
-            box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
             text-align: center;
         }
-        h1 { font-size: 24px; font-weight: 600; color: #1a1a2e; }
-        p { color: #666; margin-top: 8px; }
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+        p {
+            color: #666;
+            margin-top: 8px;
+        }
     </style>
 </head>
 <body>
@@ -35,114 +45,19 @@
     </div>
 
     <!-- ========== 引入看板娘 ========== -->
+
     <!-- 1. l2d 渲染库 -->
-    <script src="https://unpkg.com/l2d/dist/index.min.js"></script>
-
-    <!-- 2. 配置文件（关键：填入你的自定义域名和模型路径） -->
-    <script>
-        // 直接在页面里覆写配置，避免修改原 config.js
-        window.L2D_WAIFU_CONFIG = {
-            // 在手机端也显示，方便测试
-            enableOnMobile: true,
-
-            model: {
-                // 使用你指定的远程模型
-                path: 'https://fastly.jsdelivr.net/gh/amatsutsumi/live2d-model@1.2/yuezhan/model0.json',
-                scale: 1.0,
-                position: [0, -0.15],
-                volume: 0.9,
-                logLevel: 'warn'
-            },
-
-            canvas: {
-                width: 300,
-                height: 420,
-                position: 'bottom-right',
-                offsetX: 20,
-                offsetY: 20,
-                zIndex: 99999
-            },
-
-            draggable: true,
-            clickRandomAction: true,
-
-            chat: {
-                // ★ 替换成你自己的 API 地址
-                api: 'https://api.yinghu.asia/api/chat',
-                model: 'glm-4-flash',
-                temperature: 0.7,
-                timeout: 60000,
-                historySize: 8,
-                headers: {},
-                systemPrompt: '你是可爱的看板娘「小理」，回答简洁生动，控制在2句话内。',
-                quickReplies: ['你好呀', '讲个笑话', '今天天气', '摸头']
-            },
-
-            tts: {
-                enabled: true,
-                // ★ 替换成你自己的 TTS API 地址
-                api: 'https://api.yinghu.asia/api/tts',
-                voice: '',
-                extraParams: {}
-            },
-
-            emotion: {
-                enable: true,
-                detection: 'prompt',
-                default: 'neutral',
-                thinking: { motion: 'Idle', tip: '让我想想… 🤔' },
-                map: {
-                    happy:    { motion: 'Idle', tip: '开心～ ✨' },
-                    sad:      { motion: 'Idle', tip: '唔…有点难过' },
-                    angry:    { motion: 'Idle', tip: '哼！生气啦' },
-                    surprise: { motion: 'Idle', tip: '哇！真的吗？！' },
-                    shy:      { motion: 'Idle', tip: '人家害羞了啦' },
-                    neutral:  { motion: 'Idle', tip: '嗯嗯，我在听～' }
-                }
-            },
-
-            interact: {
-                hitAreaMotions: {
-                    'TouchHead': 'Idle',
-                    'TouchBody': 'Idle',
-                    'Background': 'Tap'
-                },
-                lockChatDuringModelVoice: true,
-                silentEmotionDuringChat: true,
-                welcomeMessages: ['你好呀，我是小理～ 🎀']
-            },
-
-            ui: {
-                title: '小理',
-                avatar: '🐰',
-                chatWidth: 300,
-                chatOpen: false,
-                showMenu: true,
-                showQuickSend: true,
-                statusText: {
-                    idle: '待机中',
-                    thinking: '思考中…',
-                    speaking: '语音播放中…',
-                    interacting: '互动中…',
-                    loading: '模型加载中…',
-                    modelVoice: '🔊 模型语音中'
-                }
-            },
-
-            mouth: {
-                param: 'auto',
-                openScale: 1.0
-            },
-
-            onReady: null
-        };
+    <script src="https://unpkg.com/l2d/dist/index.min.js">
     </script>
 
-    <!-- 3. 插件主文件（这里假设 l2d-waifu.js 在 live2d-plugin 文件夹里） -->
-    <!-- 如果你的 test.html 和 live2d-plugin 同级，路径就是 ./live2d-plugin/l2d-waifu.js -->
-    <!-- 如果不同级，请根据实际情况调整路径 -->
-    <link rel="stylesheet" href="./live2d-plugin/l2d-waifu.css">
-    <script src="./live2d-plugin/l2d-waifu.js"></script>
+    <!-- 2. 插件样式 -->
+    <link rel="stylesheet" href="https://yinghu.asia/live2d-plugin/l2d-waifu.css" />
+
+    <!-- 3. 插件主逻辑（配置在 config.js 中） -->
+    <script src="https://api.yinghu.asia/watcher/config.js">
+    </script>
+    <script src="https://yinghu.asia/live2d-plugin/l2d-waifu.js">
+    </script>
 
 </body>
 </html>
